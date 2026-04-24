@@ -3,13 +3,13 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-movies = pd.read_csv('movies_data.csv',
+movies = pd.read_csv("movies_data.csv",
                      low_memory=False)  # forces pandas to process the wntire file before deciding on the data types
 # since cols like popularity have many types of data
 movies = movies[['title', 'genres', 'id', 'overview', 'vote_average', 'vote_count']]
-ratings = pd.read_csv('ratings.csv')
+ratings = pd.read_csv("ratings.csv")
 ratings = ratings[['userId', 'movieId', 'rating']]
-credits = pd.read_csv('credits.csv')
+credits = pd.read_csv("credits.csv")
 
 movies['id'] = pd.to_numeric(movies['id'], errors='coerce')
 ratings['movieId'] = pd.to_numeric(ratings['movieId'], errors='coerce')
