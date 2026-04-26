@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Movie Recommender 🎬</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+    padding: 30px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+}
+
+h1 {
+    margin-bottom: 25px;
+    margin-top: 40px;
+    font-size: 26px;
+}
+
+/* Search row */
+.search-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 65%;
+}
+
+input {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 15px;
+}
+
+input::placeholder { color: #aaa; }
+
+button {
+    padding: 12px 20px;
+    margin-left: 10px;
+    border: none;
+    border-radius: 10px;
+    background: #ff4c4c;
+    color: white;
+    cursor: pointer;
+    font-size: 15px;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #ff2e2e;
+    transform: scale(1.05);
+}
+
+/* Autocomplete dropdown */
+#suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #1e1e1e;
+    border-radius: 0 0 10px 10px;
+    z-index: 100;
+    max-height: 220px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+#suggestions div {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.2s;
+}
+
+#suggestions div:hover {
+    background: rgba(255,76,76,0.3);
+}
+
+/* Status message */
+#status {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #aaa;
+    min-height: 20px;
+}
+
+/* Spinner */
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 4px solid rgba(255,255,255,0.1);
+    border-top-color: #ff4c4c;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Results grid */
+#results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 18px;
+    margin-top: 25px;
+}
+
+/* Card */
+.card {
+    background: rgba(255,255,255,0.07);
+    padding: 10px;
+    border-radius: 12px;
+    transition: 0.3s;
+    text-align: center;
+    cursor: pointer;
+}
+
+.card img {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #2a2a2a;
+}
+
+.card .movie-title {
+    margin: 8px 0 3px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.card .movie-meta {
+    font-size: 12px;
+    color: #bbb;
+}
+
+.card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255,76,76,0.5);
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+    <h1>What should you watch today?</h1>
+    <div style="position:absolute; top:20px; right:30px; font-size:13px; margin-bottom: 20px;">
+    👤 <span id="username"></span>
+    &nbsp;|&nbsp;
+    <a href="http://localhost/login_register/logout.php" 
+       style="color:#ff4c4c; text-decoration:none;">Logout</a>
+</div>
+    <div style="display:flex; justify-content:center; align-items:center;">
+        <div class="search-wrapper">
+            <input
+                type="text"
+                id="movieInput"
+                placeholder="Try: Toy Story (1995)"
+                autocomplete="off"
+                oninput="fetchSuggestions()"
+                onkeydown="if(event.key==='Enter') getRecommendations()"
+            >
+            <div id="suggestions"></div>
+        </div>
+        <button onclick="getRecommendations()">Go →</button>
+    </div>
+
+    <div id="status"></div>
+    <div id="results"></div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const user = params.get("user");
+if (user) {
+    document.querySelector("h1").textContent = ` Welcome ${user}, what should you watch today?`;
+    document.getElementById("username").textContent = user;
+}
+const OMDB_KEY = "1ac51540";
+let suggestionTimeout = null;
+
+// ── Autocomplete ──────────────────────────────────────────────
+async function fetchSuggestions() {
+    clearTimeout(suggestionTimeout);
+    const query = document.getElementById("movieInput").value.trim();
+    const box   = document.getElementById("suggestions");
+
+    if (query.length < 2) { box.innerHTML = ""; return; }
+
+    suggestionTimeout = setTimeout(async () => {
+        try {
+            const res  = await fetch(`/search?q=${encodeURIComponent(query)}`);
+            const list = await res.json();
+            box.innerHTML = "";
+            list.forEach(title => {
+                const div = document.createElement("div");
+                div.textContent = title;
+                div.onclick = () => {
+                    document.getElementById("movieInput").value = title;
+                    box.innerHTML = "";
+                    getRecommendations();
+                };
+                box.appendChild(div);
+            });
+        } catch { box.innerHTML = ""; }
+    }, 300);
+}
+
+// Close suggestions when clicking outside
+document.addEventListener("click", e => {
+    if (!e.target.closest(".search-wrapper"))
+        document.getElementById("suggestions").innerHTML = "";
+});
+
+// ── Main recommendation fetch ─────────────────────────────────
+async function getRecommendations() {
+    const movie   = document.getElementById("movieInput").value.trim();
+    const results = document.getElementById("results");
+    const status  = document.getElementById("status");
+
+    document.getElementById("suggestions").innerHTML = "";
+
+    if (!movie) {
+        status.textContent = "Please enter a movie name.";
+        return;
+    }
+
+    // Show spinner
+    results.innerHTML = "";
+    status.innerHTML  = '<div class="spinner"></div>';
+
+    try {
+        const res  = await fetch(`/recommend?movie=${encodeURIComponent(movie)}`);
+        const data = await res.json();
+
+        if (data.error) {
+            status.textContent = `❌ ${data.error}`;
+            results.innerHTML  = "";
+            return;
+        }
+
+        status.textContent = `Showing ${data.recommendations.length} recommendations for "${movie}"`;
+        results.innerHTML  = "";
+
+        // Fetch all posters in parallel
+        const cards = await Promise.all(
+            data.recommendations.map(title => fetchMovieCard(title))
+        );
+
+        cards.forEach(card => { if (card) results.appendChild(card); });
+
+        if (results.children.length === 0) {
+            results.innerHTML = "<p style='color:#aaa'>No results with poster data found.</p>";
+        }
+
+    } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Error connecting to server.";
+    }
+}
+
+// ── Build a single movie card ─────────────────────────────────
+async function fetchMovieCard(title) {
+    // Extract clean title and year from "Movie Name (YYYY)"
+    const yearMatch = title.match(/\((\d{4})\)/);
+    const year      = yearMatch ? yearMatch[1] : "";
+    const cleanTitle = title.split("(")[0].trim();
+
+    let poster = "https://placehold.co/150x220/1a1a1a/555?text=No+Poster";
+    let rating = "N/A";
+    let displayYear = year;
+
+    try {
+        const url = year
+            ? `https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&y=${year}&apikey=${OMDB_KEY}`
+            : `https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_KEY}`;
+
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.Response === "True") {
+            if (data.Poster && data.Poster !== "N/A") poster = data.Poster;
+            rating      = data.imdbRating || "N/A";
+            displayYear = data.Year || year;
+        }
+    } catch { /* keep defaults */ }
+
+    const div = document.createElement("div");
+    div.classList.add("card");
+    div.innerHTML = `
+        <img src="${poster}" alt="${cleanTitle}" loading="lazy">
+        <p class="movie-title">${cleanTitle}</p>
+        <p class="movie-meta">⭐ ${rating} &nbsp;|&nbsp; ${displayYear}</p>
+    `;
+    return div;
+}
+</script>
+</body>
+</html>
