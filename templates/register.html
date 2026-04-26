@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+    <style>
+        body { background-color: #121212; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: white; }
+        .card { background-color: #1e1e1e; padding: 40px; border-radius: 12px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { margin-bottom: 25px; font-size: 28px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: none; box-sizing: border-box; font-size: 16px; }
+        .pw-req { font-size: 12px; color: #888; text-align: left; margin-bottom: 15px; }
+        .btn { width: 100%; padding: 12px; background-color: #ff4444; border: none; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .link { color: #ff4444; text-decoration: none; display: block; margin-top: 20px; font-size: 14px; }
+        .captcha-box { background: #333; padding: 5px; margin: 5px 0; letter-spacing: 5px; font-weight: bold; color: #00ff00; }
+        .error { color: #ff4444; font-size: 13px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Register</h2>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}<p class="error">{{ messages[0] }}</p>{% endif %}
+        {% endwith %}
+        <form method="POST">
+            <input type="text" name="name" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email Address" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <p class="pw-req">Must include: uppercase, lowercase, number, special character (min 8 chars)</p>
+            
+            <div class="captcha-box">{{ captcha }}</div>
+            <input type="text" name="captcha" placeholder="Enter Captcha Above" required style="border: 1px solid #444;">
+
+            <button type="submit" class="btn">Register</button>
+        </form>
+        <a href="/login" class="link">Already have an account? Login</a>
+    </div>
+</body>
+</html>
