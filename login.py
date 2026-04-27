@@ -13,7 +13,7 @@ db_config = {
     'host': 'localhost',
     'user': 'root',         # Default is 'root'
     'password': 'berrybeshe',         # Enter your MySQL password here
-    'database': 'login_db'
+    'database': 'users_db'
 }
 
 def get_db_connection():
