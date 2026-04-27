@@ -175,8 +175,7 @@ button:hover {
     <div style="position:absolute; top:20px; right:30px; font-size:13px; margin-bottom: 20px;">
     👤 <span id="username"></span>
     &nbsp;|&nbsp;
-    <a href="http://localhost/login_register/logout.php" 
-       style="color:#ff4c4c; text-decoration:none;">Logout</a>
+    <a href="http://127.0.0.1:5000/login" style="color:#ff4c4c; text-decoration:none;">Logout</a>
 </div>
     <div style="display:flex; justify-content:center; align-items:center;">
         <div class="search-wrapper">
@@ -217,7 +216,7 @@ async function fetchSuggestions() {
 
     suggestionTimeout = setTimeout(async () => {
         try {
-            const res  = await fetch(`/search?q=${encodeURIComponent(query)}`);
+            const res  = await fetch(`http://127.0.0.1:5001/search?q=${encodeURIComponent(query)}`);
             const list = await res.json();
             box.innerHTML = "";
             list.forEach(title => {
@@ -258,7 +257,7 @@ async function getRecommendations() {
     status.innerHTML  = '<div class="spinner"></div>';
 
     try {
-        const res  = await fetch(`/recommend?movie=${encodeURIComponent(movie)}`);
+        const res  = await fetch(`http://127.0.0.1:5001/recommend?movie=${encodeURIComponent(movie)}`);
         const data = await res.json();
 
         if (data.error) {
